@@ -46,12 +46,14 @@ true.
 ?- $baz.set(point{ x: ($foo.get()) , y:vy, z:vz}).
 true.
 
-?- trace,writeln($baz.value.x).
+?- writeln($baz.value.x).
 xxxxxxxx
 true.
 
-```
+?- writeln($baz.x). % will error as you havented acceed the value
 
+```
+Another Pack  called [udt](https://github.com/logicmoo/udt) add better OO API on these values
 
 
 @author Douglas Miles <dmiles@gmail.com>
