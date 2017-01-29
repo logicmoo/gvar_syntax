@@ -1,4 +1,4 @@
-:- module(gvar_syntax,[]).
+:- module(gvar_syntax,[('.')/2,gvar_ref/1]).
 
 /** <module> gvar_syntax - Global Variable Syntax
 
@@ -11,6 +11,7 @@
     modify it.
 
 */
+gvar_ref(_).
 
 gvar_ref(Name,Value):- nb_current(Name,Ref),!,Ref=Value, nonvar(Value)->true;freeze(Value,set_gvar(Name, Value)).
 gvar_ref(Name,Value):- nb_linkval(Name,Value),freeze(Value,set_gvar(Name, Value)).
@@ -21,23 +22,28 @@ gvar_type(gvar_default_type,nb_linkval).
 
 
 % Call Previous Method
-gv_call(Self,Memb,Value):- notrace(var(Self);is_dict(Self);Self\='$'(_))
+gv_call(Self,Memb,Value):- notrace(var(Self);is_dict(Self))
  ->'$dict_dot3'(Self, Memb, Value)
- ; 
- once(gv_call0(Self,Memb,Value)).
+ ; once((arg(1,Self,Name),gv_call0(Name,Memb,Value))).
+
 
 
 gv_call0(gvar,Name,Value):-gvar_ref(Name,Value).
 
 gv_call0(Name, current(),Value):-nb_current(Name,Value).
 gv_call0(Name, get(),Value):-nb_getval(Name,Value).
+gv_call0(Name, value, Value):- gvar_ref(Name,Value).
 
-gv_call0(Name, set(Value), nb_setval(Name,Value)).
-gv_call0(Name, put(Value), gvar_syntax:gvar_ref(Name,Value)).
-gv_call0(Name, let(Value), b_setvar(Name,Value)).
+gv_call0(Name, clear(),gvar_ref(Name)):- nb_delete(Name).
+
+gv_call0(Name, set, Value):- nb_setval(Name,Value).
+gv_call0(Name, let, Value):- b_setval(Name,Value),nb_linkval(Name,Value).
+gv_call0(Name, set(Value),gvar_ref(Name)):- gv_call0(Name, set, Value).
+gv_call0(Name, let(Value),gvar_ref(Name)):- gv_call0(Name, let, Value).
 
 
-
+% :- trace.
+:- Head=..['.',Name, Func], system:asserta(( Head :- gv_call(Name,Func,_))).
 
 
 :- if(clause('$dicts':'.'(_,_,_),_)).
@@ -69,4 +75,6 @@ gv_call0(Name, let(Value), b_setvar(Name,Value)).
 :- 'system':abolish('$dicts':'.'/3).
 
 'system':'.'(Dict, Func, Value) :- gv_call(Dict,Func,Value).
+
+
 

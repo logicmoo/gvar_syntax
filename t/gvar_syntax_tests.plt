@@ -6,7 +6,7 @@
 
 test(1):- writeln($foo.get()).
 
-test(2):- trace, $bar.set(2), $foo.set($bar.get()), test1.
+test(2):- $bar.set(2), $foo.set($bar.get()), test1.
 
 test(3):- writeln($gvar.foo).
 
