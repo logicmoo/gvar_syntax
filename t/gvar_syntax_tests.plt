@@ -1,7 +1,7 @@
 
 :- use_module(library(gvar_syntax)).
 
-:- $gvar.foo = 1.
+:- $foo.value = 1.
 
 
 test(1):- writeln($foo.get()).
@@ -12,7 +12,7 @@ test(3):- writeln($gvar.foo).
 
 test(4):- forall(gv_tests,true).
 
-test(5):- $gvar.baz = point{x:vx,y:vy,z:vz}.
+test(5):- $baz.set(point{x:vx,y:vy,z:vz}).
 
 test(6):- writeln($baz.get().z).
 
