@@ -8,38 +8,35 @@
     Copyright (C): 2017
                        
     This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-    You should have received a copy of the GNU General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-    As a special exception, if you link this library with other files,
-    compiled with a Free Software compiler, to produce an executable, this
-    library does not by itself cause the resulting executable to be covered
-    by the GNU General Public License. This exception does not however
-    invalidate any other reasons why the executable file might be covered by
-    the GNU General Public License.
+    modify it.
+
 */
 
-get_gvar(Name,Value):- nb_current(Name,Ref),!,Ref=Value, nonvar(Value)->true;freeze(Value,set_gvar(Name, Value)).
-get_gvar(Name,Value):- nb_linkval(Name,Value),freeze(Value,set_gvar(Name, Value)).
+gvar_ref(Name,Value):- nb_current(Name,Ref),!,Ref=Value, nonvar(Value)->true;freeze(Value,set_gvar(Name, Value)).
+gvar_ref(Name,Value):- nb_linkval(Name,Value),freeze(Value,set_gvar(Name, Value)).
+
 set_gvar(Name,Value):- nb_linkval(Name,Value).
 
 gvar_type(gvar_default_type,nb_linkval).
 
 
 % Call Previous Method
-gv_call(Self,Memb,Value):- (var(Self);is_dict(Self);Self\='$'(_)),!,'$dict_dot3'(Self, Memb, Value).
+gv_call(Self,Memb,Value):- notrace(var(Self);is_dict(Self);Self\='$'(_))
+ ->'$dict_dot3'(Self, Memb, Value)
+ ; 
+ once(gv_call0(Self,Memb,Value)).
 
-gv_call($gvar,Name,Value):-!,get_gvar(Name,Value).
-gv_call($Name, set(Value),udt:get_gvar(Name,Value)):-nonvar(Name),!.
-gv_call($Name, get(),Value):-nonvar(Name),!,nb_getval(Name,Value).
-gv_call($Name, let(Value),udt:get_gvar(Name,Value)):-nonvar(Name),!.
+
+gv_call0(gvar,Name,Value):-gvar_ref(Name,Value).
+
+gv_call0(Name, current(),Value):-nb_current(Name,Value).
+gv_call0(Name, get(),Value):-nb_getval(Name,Value).
+
+gv_call0(Name, set(Value), nb_setval(Name,Value)).
+gv_call0(Name, put(Value), gvar_syntax:gvar_ref(Name,Value)).
+gv_call0(Name, let(Value), b_setvar(Name,Value)).
+
+
 
 
 
