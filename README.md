@@ -33,7 +33,6 @@ true.
 ?- $foo.clear().
 true.
 
-
 ?- writeln($foo.value).
 _8350
 
@@ -53,10 +52,16 @@ true.
 ?- writeln($baz.x). % will error as you havented acceed the value
 
 ```
-Another Pack  called [udt](https://github.com/logicmoo/udt) add better OO API on these values
+
+Another Pack  called [dictoo](https://github.com/logicmoo/dictoo) 
+adds better OO API on these values
 
 
-@author Douglas Miles <logicmoo@gmail.com>
-```
-@license None
-```
+
+[BSD 2-Clause License](LICENSE.md)
+
+Copyright (c) 2017, 
+Douglas Miles <logicmoo@gmail.com>
+All rights reserved.
+
+
