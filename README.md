@@ -30,6 +30,10 @@ true.
 1
 true.
 
+?- $foo.clear().
+true.
+
+
 ?- writeln($foo.value).
 _8350
 
