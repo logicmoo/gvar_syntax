@@ -56,5 +56,7 @@ true.
 Another Pack  called [udt](https://github.com/logicmoo/udt) add better OO API on these values
 
 
-@author Douglas Miles <dmiles@gmail.com>
+@author Douglas Miles <logicmoo@gmail.com>
+```
 @license None
+```
