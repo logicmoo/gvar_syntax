@@ -12,6 +12,7 @@ This module uses [semantic versioning](http://semver.org/).
 Source code available and pull requests accepted at
 http://github.com/logicmoo/gvar_syntax
 
+```prolog
 ?- use_module(library(gvar_syntax)).
 true.
 
@@ -45,7 +46,7 @@ true.
 xxxxxxxx
 true.
 
-
+```
 
 
 
