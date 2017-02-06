@@ -95,10 +95,10 @@ make_dot(Name, Missed,Value):- Value =.. ['.',$(Name),Missed].
 gvar_unify(Name,Value):- nb_current(Name,Was),!,Value=Was.
 gvar_unify(Name,Value):- nb_linkval(Name,Value),freeze(Value,gvar_put(Name, Value)).
 
-% 
+
+% Sets a copy and then unifies the value to the copy
 gvar_put(Name,Value):- 
-   b_setval(Name,Value), % after duplicate_term
-   (compound(Value)->
-        nb_current(Name,Value);true). %  we still want the same variables (if possible)
+   nb_setval(Name,Value), % after duplicate_term
+   nb_current(Name,Value). %  we still want the same variables (if possible)
 
 

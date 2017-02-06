@@ -29,4 +29,4 @@ test(11):- $baz.value.y == yYYYY.
 
 all_tests:- forall(test(_),true).
 
-
+:- listing(test(_)).
