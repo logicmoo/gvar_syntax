@@ -1,7 +1,9 @@
-:- module(gvar_syntax,[
- ('.')/2, 
- was_gvar/1,
- is_gvar/2]).
+:- module(gvar_syntax,
+[
+ is_gvar/2,       % +Self, -Name
+ gvar_interp/3,   % +GVar, +Func, ?Value
+ was_gvar/1       % +GVar
+ ]).
 
 /** <module> gvar_syntax - Global Variable Syntax
 
@@ -16,7 +18,6 @@
 */
 
 :- use_module(library(dicts)).
-
 
 :- '$set_source_module'('$dicts').
 :- clause('.'(Dict, Func, Value),BODY),nb_setval(gvar_syntax, (':-'('.'(Dict, Func, Value),BODY))).
@@ -42,10 +43,11 @@
 :- dynamic((.)/2).
 :- module_transparent((.)/2).
 :- Head=..['.',Self, Func], assert((( Head :- debugging(gvar_syntax,gvar_callable_syntax(Self, Func)), '$dicts':'.'(Self, Func,_)))).
+:- export(('.')/2).
 :- endif.
 
 
-%% is_gvar(+Self,-Name) is det.
+%! is_gvar(+Self, -Name) is det.
 %
 %  Tests to see if Self
 %  is $(Name) or was_gvar($Name).
@@ -62,14 +64,14 @@ is_gvar(Self,Name):-
 */
 
 
-%% was_gvar(atomic:+GVar) is det.
+%! was_gvar(+GVar) is det.
 %
 %  Wrapper that is callable
 %
 was_gvar(_).
 
 
-%% gvar_interp(+GVar, +Func, ?Value) is det.
+%! gvar_interp(+GVar, +Func, ?Value) is det.
 %
 %  Get/Set GVar or call the previous 
 %  Dict interpretor
