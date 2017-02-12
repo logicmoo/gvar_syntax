@@ -1,6 +1,8 @@
 
 :- use_module(library(gvar_syntax)).
 
+% :- set_prolog_flag(gvar_syntax_scope,module).
+
 :- $foo.value = 1.
 
 test(0):- \+ $foo.value = 2.
