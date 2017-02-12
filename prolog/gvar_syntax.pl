@@ -1,13 +1,10 @@
 :- module(gvar_syntax,
 [
  is_gvar/2,       % +Self, -Name
- gvar_interp/3,   % +GVar, +Func, ?Value
+ gvar_must/3,     % +GVar, +Func, ?Value
+ gvar_call/3,     % +GVar, +Func, ?Value
  was_gvar/1       % +GVar
  ]).
-
-:- meta_predicate(gvar_interp(:,?,?)).
-:- meta_predicate(gvar_interp_0(:,?,?)).
-
 /** <module> gvar_syntax - Global Variable Syntax
 
     Author:        Douglas R. Miles
@@ -19,6 +16,8 @@
     modify it.
 
 */
+
+:- meta_predicate(gvar_call(:,?,?)).
 
 :- use_module(library(dicts)).
 
@@ -33,9 +32,9 @@
 :- endif.
 :- nb_getval(gvar_syntax,WAS),
  compile_aux_clauses([(('$dicts':'.'(Self,Func,Value):- 
-   is_gvar(Self,Name),!,gvar_interp(Name,Func,Value))),WAS]).
+   is_gvar(Self,Name),!,gvar_must(Name,Func,Value))),WAS]).
 :- '$dicts':import(gvar_syntax:is_gvar/2).
-:- '$dicts':import(gvar_syntax:gvar_interp/3).
+:- '$dicts':import(gvar_syntax:gvar_must/3).
 :- if(current_prolog_flag(gvar_syntax,non_extendable)).
 :- compile_predicates(['$dicts':'.'(_Dict, _Func, _Value)]).
 :- endif.
@@ -72,33 +71,34 @@ was_gvar(_).
 
 
 
-%! gvar_interp(+GVar, +Func, ?Value) is det.
+%! gvar_must(+GVar, +Func, ?Value) is det.
 %
 %  Get/Set GVar or call the previous 
 %  Dict interpretor
 %
-gvar_interp(Name, Memb, Value) :- gvar_interp_0(Name, Memb, Value),!.
-gvar_interp(Name, Missed,Value) :-  make_dot(Name,Missed,Value).
+:- module_transparent(gvar_must/3).
+gvar_must(Name, Memb, Value) :- gvar_call(Name, Memb, Value),!.
+gvar_must(Name, Missed,Value) :-  make_dot(Name,Missed,Value).
 
-gvar_interp_0(M:Name, Memb, Value) :- 
+gvar_call(M:Name, Memb, Value) :- 
     (  \+ current_prolog_flag(gvar_syntax_scope,module)
-      -> gvar_interp_1(Name,Name, Memb, Value) ;
+      -> gvar_interp(Name,Name, Memb, Value) ;
       (atomic_list_concat([M,':',Name],NewName),
-      gvar_interp_1(Name,NewName, Memb, Value))),!.
+      gvar_interp(Name,NewName, Memb, Value))),!.
 
 
-:- module_transparent(gvar_interp_1/4).
-% checked above gvar_interp(Name, Var, Value):- var(Var),!,make_dot(Name, Var,Value).
-gvar_interp_1(_, Name, current(),Value):- !, nb_current(Name,Value).
-gvar_interp_1(_, Name, get(),Value):- !,nb_getval(Name,Value).
-gvar_interp_1(_, Name, value, Value):- !, gvar_unify(Name,Value).
+:- module_transparent(gvar_interp/4).
+% checked above gvar_must(Name, Var, Value):- var(Var),!,make_dot(Name, Var,Value).
+gvar_interp(_, Name, current(),Value):- !, nb_current(Name,Value).
+gvar_interp(_, Name, get(),Value):- !,nb_getval(Name,Value).
+gvar_interp(_, Name, value, Value):- !, gvar_unify(Name,Value).
 
 % the trick here is an undone linkval
-gvar_interp_1(_, Name, let, Value):- !, b_setval(Name,Value),nb_linkval(Name,Value).
-gvar_interp_1(_, Name, set, Value):- !, gvar_put(Name,Value).
-gvar_interp_1(SN,Name, set(Value),was_gvar($SN)):-!, gvar_interp_1(SN,Name, set, Value).
-gvar_interp_1(SN,Name, let(Value),was_gvar($SN)):-!, gvar_interp_1(SN,Name, let, Value).
-gvar_interp_1(SN,Name, clear(),was_gvar($SN)):-!, nb_delete(Name).
+gvar_interp(_, Name, let, Value):- !, b_setval(Name,Value),nb_linkval(Name,Value).
+gvar_interp(_, Name, set, Value):- !, gvar_put(Name,Value).
+gvar_interp(SN,Name, set(Value),was_gvar($SN)):-!, gvar_interp(SN,Name, set, Value).
+gvar_interp(SN,Name, let(Value),was_gvar($SN)):-!, gvar_interp(SN,Name, let, Value).
+gvar_interp(SN,Name, clear(),was_gvar($SN)):-!, nb_delete(Name).
 
 
 make_dot(Name, Missed,Value):- Value =.. ['.',$(Name),Missed].
