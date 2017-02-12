@@ -6,6 +6,7 @@
  ]).
 
 :- meta_predicate(gvar_interp(:,?,?)).
+:- meta_predicate(gvar_interp_1(:,?,?)).
 
 /** <module> gvar_syntax - Global Variable Syntax
 
@@ -76,12 +77,14 @@ was_gvar(_).
 %  Get/Set GVar or call the previous 
 %  Dict interpretor
 %
-gvar_interp(M:Name, Memb, Value) :- 
+gvar_interp(M:Name, Memb, Value) :- gvar_interp_1(M:Name, Memb, Value).
+gvar_interp(_:Name, Missed,Value) :-  make_dot(Name,Missed,Value).
+
+gvar_interp_1(M:Name, Memb, Value) :- 
     (  \+ current_prolog_flag(gvar_syntax_scope,module)
       -> gvar_interp_1(Name,Name, Memb, Value) ;
       (atomic_list_concat([M,':',Name],NewName),
       gvar_interp_1(Name,NewName, Memb, Value))),!.
-
 
 
 :- module_transparent(gvar_interp_1/4).
@@ -96,7 +99,6 @@ gvar_interp_1(_, Name, set, Value):- !, gvar_put(Name,Value).
 gvar_interp_1(SN,Name, set(Value),was_gvar($SN)):-!, gvar_interp_1(SN,Name, set, Value).
 gvar_interp_1(SN,Name, let(Value),was_gvar($SN)):-!, gvar_interp_1(SN,Name, let, Value).
 gvar_interp_1(SN,Name, clear(),was_gvar($SN)):-!, nb_delete(Name).
-gvar_interp_1(SN,_Name, Missed,Value) :-  make_dot(SN,Missed,Value).
 
 
 make_dot(Name, Missed,Value):- Value =.. ['.',$(Name),Missed].
