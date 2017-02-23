@@ -18,6 +18,7 @@
 */
 
 :- meta_predicate(gvar_call(:,?,?)).
+:- set_module(class(library)).
 
 :- use_module(library(dicts)).
 
