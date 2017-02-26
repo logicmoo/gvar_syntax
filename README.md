@@ -5,9 +5,9 @@
 
 Using SWI-Prolog 7.1 or later:
 
-    ?- pack_install(gvar_syntax).
+    ?- pack_install('https://github.com/TeamSPoon/gvar_syntax.git').
 
-This module uses [semantic versioning](http://semver.org/).
+
 
 Source code available and pull requests accepted at
 http://github.com/TeamSPoon/gvar_syntax
