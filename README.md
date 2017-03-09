@@ -53,7 +53,7 @@ true.
 
 ```
 
-Another Pack  called [dictoo](https://github.com/logicmoo/dictoo) 
+Another Pack  called [dictoo](https://github.com/TeamSPoon/dictoo) 
 adds better OO API on these values
 
 
