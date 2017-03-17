@@ -1,7 +1,7 @@
 name(gvar_syntax).
 title('Global Variable Syntax').
 
-version('1.1.114').
+version('1.1.115').
 download('https://github.com/TeamSPoon/gvar_syntax/releases/*.zip').
 
 author( 'Douglas R. Miles', 'logicmoo@gmail.com' ).
