@@ -20,7 +20,8 @@
 :- meta_predicate(gvar_call(:,?,?)).
 :- set_module(class(library)).
 
-:- use_module(library(dicts)).
+:- reexport(library(debug),[debug/3]).
+:- reexport(library(dicts)).
 
 
 :- multifile(dot_intercept/3).
@@ -57,7 +58,7 @@ install_dot_intercept:-
    'system':lock_predicate('$dicts':'.'/3),
    'system':import('$dicts':'.'/3).
 
-:- install_dot_intercept. 
+:- install_dot_intercept.
 % :- listing('$dicts':('.')/3).
 
 :- if(\+ current_prolog_flag(gvar_callable_syntax,false)).
