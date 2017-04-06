@@ -85,6 +85,13 @@ dot_intercept(Self,Func,Value):- is_dot_hook(Self,Name),!,dot_syntax_hook(Name,F
 dot_intercept(Self,Func,Value):- is_gvar(Self,Name),!,gvar_must(Name,Func,Value).
 dot_intercept(Self,Func,Value):- dot_dict(Self, Func, Value).
 
+:- '$dicts':export('$dicts':eval_dict_function/4).
+:- '$dicts':export('$dicts':'$get_dict_ex'/3).
+:- '$dicts':export('$dicts':'$type_error'/3).
+:- system:import('$dicts':eval_dict_function/4).
+:- system:import('$dicts':'$get_dict_ex'/3).
+:- system:import('$dicts':'$type_error'/3).
+
 
 %!  dot_dict(+R, +L, -Result)
 %
@@ -101,14 +108,10 @@ dot_dict(Data, Func, Value) :-
     ->  (   (atomic(Func) ; var(Func))
         ->  dict_create(Dict, _, Data),
             '$get_dict_ex'(Func, Dict, Value)
-        ;   '$dict':'$type_error'(atom, Func)
+        ;   '$type_error'(atom, Func)
         )
-    ;   '$dict':'$type_error'(dict, Data)
+    ;   '$type_error'(dict, Data)
     ).
-
-:- import('eval_dict_function'/4).
-:- import('$get_dict_ex'/3).
-:- import('$type_error'/3).
 
 %! is_gvar(+Self, -Name) is det.
 %
@@ -177,7 +180,7 @@ gvar_interp(SN, Name, Func, Value):-
 gvar_interp5(dict(Data,_Tag), _SN, _Name, Func, Value):- var(Func),!,get_dict(Func, Data, Value).
 gvar_interp5(dict(Data,Tag), _SN, _Name, Func, Value):- 
   (is_dict_function(Tag,Func)
-      -> (!,eval_dict_function(Data,Func,Value))
+      -> (!,eval_dict_function(Func, Tag, Data, Value))
       ; (atom(Func)
          -> get_dict(Func, Data, Value))).
 
