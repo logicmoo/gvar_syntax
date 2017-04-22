@@ -81,8 +81,10 @@ install_dot_intercept:-
 :- dynamic(dot_syntax_hook/3).
 :- module_transparent(dot_syntax_hook/3).
 
+dot_intercept(Self,Func,Value):- nonvar(Value),current_prolog_flag(gvar_nondict_ok,true),!,Value =.. ['.',Self,Func].
 dot_intercept(Self,Func,Value):- is_dot_hook(Self,Name),!,dot_syntax_hook(Name,Func,Value).
 dot_intercept(Self,Func,Value):- is_gvar(Self,Name),!,gvar_must(Name,Func,Value).
+dot_intercept(Self,Func,Value):- current_prolog_flag(gvar_nondict_ok,true), \+ is_dict(Self),!,Value =.. ['.',Self,Func].
 dot_intercept(Self,Func,Value):- dot_dict(Self, Func, Value).
 
 :- '$dicts':export('$dicts':eval_dict_function/4).
