@@ -210,7 +210,7 @@ gvar_unify(Name,Value):- nb_linkval(Name,Value),freeze(Value,gvar_put(Name, Valu
 
 % Sets a copy and then unifies the value to the copy
 gvar_put(Name,Value):- 
-   nb_setval(Name,Value), % after duplicate_term
+   nb_setval(Name,Value), % after dupe_term
    nb_current(Name,Value). %  we still want the same variables (if possible)
 
 
