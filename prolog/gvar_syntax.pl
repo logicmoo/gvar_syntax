@@ -1,9 +1,9 @@
 :- module(gvar_syntax,
 [
- is_gvar/2,       % +Self, -Name
- gvar_must/3,     % +GVar, +Func, ?Value
- gvar_call/3,     % +GVar, +Func, ?Value
- '$was_gvar'/1       % +GVar
+ is_gvar/3,       % +Module, +Self, -Name
+ gvar_must/4,     % +Module, +GVar, +Func, ?Value
+ gvar_call/4,     % +Module, +GVar, +Func, ?Value
+ '$was_gvar'/2       % +Module, +GVar
  ]).
 /** <module> gvar_syntax - Global Variable Syntax
 
@@ -17,7 +17,7 @@
 
 */
 
-:- meta_predicate(gvar_call(:,?,?)).
+:- meta_predicate(gvar_call(+,?,?,?)).
 :- set_module(class(library)).
 
 :- reexport(library(debug),[debug/3]).
@@ -27,6 +27,7 @@
 :- multifile(dot_intercept/3).
 :- dynamic(dot_intercept/3).
 :- module_transparent(dot_intercept/3).
+:- meta_predicate(dot_intercept(:,?,?)).
 :- '$dicts':import(dot_intercept/3).
 :- 'system':import(dot_intercept/3).
 /*
@@ -50,8 +51,8 @@ install_dot_intercept:-
    % multifile('$dicts':'.'/3),
    module_transparent('$dicts':'.'/3),
    '$set_source_module'('$dicts'),
-   compile_aux_clauses([
-      (('$dicts':'.'(Self,Func,Value) :- dot_intercept(Self,Func,Value))) %,
+   '$dicts':compile_aux_clauses([
+      (('.'(SSelf,Func,Value) :- strip_module(SSelf,M,Self), dot_intercept(M:Self,Func,Value))) %,
       % ('.'(Dict, Func, Value) ':-' BODY)
       ]),
    '$set_source_module'(gvar_syntax),
@@ -66,26 +67,29 @@ install_dot_intercept:-
 :- module_transparent((.)/2).
 :- dynamic((.)/2).
 :- module_transparent((.)/2).
-:- Head=..['.',Self, Func], assert((( 
-  Head :- nop(debugging(gvar_syntax,gvar_callable_syntax(Self, Func))),
-          dot_intercept(Self, Func,_)))).
+:- Head=..['.',SSelf, Func], 
+  system:assert((( 
+  Head :- strip_module(SSelf,M,Self), nop(debugging(gvar_syntax,gvar_callable_syntax(Self, Func))),
+          dot_intercept(M:Self, Func,_)))).
 :- export(('.')/2).
 :- 'system':import(('.')/2).
 :- endif.
 
-:- multifile(is_dot_hook/2).
-:- dynamic(is_dot_hook/2).
-:- module_transparent(is_dot_hook/2).
+:- multifile(is_dot_hook/4).
+:- dynamic(is_dot_hook/4).
+:- module_transparent(is_dot_hook/4).
 
-:- multifile(dot_syntax_hook/3).
-:- dynamic(dot_syntax_hook/3).
-:- module_transparent(dot_syntax_hook/3).
+:- multifile(dot_syntax_hook/4).
+:- dynamic(dot_syntax_hook/4).
+:- module_transparent(dot_syntax_hook/4).
 
-dot_intercept(Self,Func,Value):- nonvar(Value),current_prolog_flag(gvar_nondict_ok,true),!,Value =.. ['.',Self,Func].
-dot_intercept(Self,Func,Value):- is_dot_hook(Self,Name),!,dot_syntax_hook(Name,Func,Value).
-dot_intercept(Self,Func,Value):- is_gvar(Self,Name),!,gvar_must(Name,Func,Value).
-dot_intercept(Self,Func,Value):- current_prolog_flag(gvar_nondict_ok,true), \+ is_dict(Self),!,Value =.. ['.',Self,Func].
-dot_intercept(Self,Func,Value):- dot_dict(Self, Func, Value).
+dot_intercept(MSelf,Func,Value):- strip_module(MSelf,M,Self),dot_intercept4(M,Self,Func,Value).
+  
+dot_intercept4(M,Self,Func,Value):- nonvar(Value),current_prolog_flag(gvar_nondict_ok,true),!,Value =.. ['.',M:Self,Func].
+dot_intercept4(M,Self,Func,Value):- show_call(is_dot_hook(M,Self,Func,Value)),!,dot_syntax_hook(M,Self,Func,Value).
+dot_intercept4(M,Self,Func,Value):- is_gvar(M,Self,Name),!,gvar_must(M,Name,Func,Value).
+dot_intercept4(M,Self,Func,Value):- current_prolog_flag(gvar_nondict_ok,true), \+ is_dict(Self),!,Value =.. ['.',M:Self,Func].
+dot_intercept4(M,Self,Func,Value):- M:dot_dict(Self, Func, Value).
 
 :- '$dicts':export('$dicts':eval_dict_function/4).
 :- '$dicts':export('$dicts':'$get_dict_ex'/3).
@@ -115,42 +119,42 @@ dot_dict(Data, Func, Value) :-
     ;   '$type_error'(dict, Data)
     ).
 
-%! is_gvar(+Self, -Name) is det.
+%! is_gvar(+Module, +Self, -Name) is det.
 %
 %  Tests to see if Self
-%  is $(Name) or '$was_gvar'($Name).
+%  is $(Name) or '$was_gvar'(Module,$Name).
 %
-is_gvar(Self,Name):- 
+is_gvar(_,Self,Name):- 
     nonvar(Self),
     (Self='$'(Name);
-    (Self='$was_gvar'(DName),compound(DName),DName='$'(Name))),!,
+    (Self='$was_gvar'(_,DName),compound(DName),DName='$'(Name))),!,
    atom(Name).
 
-%! '$was_gvar'(+GVar) is det.
+%! '$was_gvar'(+Module, +GVar) is det.
 %
 %  Wrapper that is callable
 %
-'$was_gvar'(_).
+'$was_gvar'(_,_).
 
 
 
-%! gvar_must(+GVar, +Func, ?Value) is det.
+%! gvar_must(+Module, +GVar, +Func, ?Value) is det.
 %
 %  Get/Set GVar or call the previous 
 %  Dict interpretor
 %
-:- module_transparent(gvar_must/3).
-gvar_must(Name, Memb, Value) :- gvar_call(Name, Memb, Value),!.
-gvar_must(Name, Missed,Value) :-  make_dot(Name,Missed,Value).
+:- module_transparent(gvar_must/4).
+gvar_must(M,Name, Memb, Value) :-  gvar_call(M,Name, Memb, Value),!.
+gvar_must(M,Name, Missed,Value) :-  make_dot(M,Name,Missed,Value).
 
-gvar_call(M:Name, Memb, Value) :- atom(Name),nonvar(Memb),
-    (  \+ current_prolog_flag(gvar_syntax_scope,module)
-      -> gvar_interp(Name,Name, Memb, Value) ;
+gvar_call(M,Name, Memb, Value) :- atom(Name),nonvar(Memb),
+    (  \+ current_prolog_flag(gvar_syntax_scope,prepend_module)
+      -> gvar_interp(M,Name,Name, Memb, Value) ;
       (atomic_list_concat([M,':',Name],NewName),
-      gvar_interp(Name,NewName, Memb, Value))),!.
+      gvar_interp(M,Name,NewName, Memb, Value))),!.
 
 
-:- module_transparent(gvar_interp/4).
+:- module_transparent(gvar_interp/5).
 
 is_dict_function(_,get(_Key)).
 is_dict_function(_,put(_Key)).
@@ -159,12 +163,12 @@ is_dict_function(Tag,Func):- atom(Tag),current_module(Tag),
    compound_name_arity(Func,F,A), 
    A2 is A+2,
    current_predicate(Tag:F/A2),!,
-   assertion(\+ is_gvar_function(Func)).
+   assertion(\+ is_gvar_function(Tag,Func)).
 
-is_gvar_function(current()).
-is_gvar_function(getval()).
-is_gvar_function(unify()).
-is_gvar_function(Func):- is_gvar_set_function(Func).
+is_gvar_function(_,current()).
+is_gvar_function(_,getval()).
+is_gvar_function(_,unify()).
+is_gvar_function(_,Func):- is_gvar_set_function(Func).
 
 is_gvar_set_function(let()).
 is_gvar_set_function(set()).
@@ -172,46 +176,46 @@ is_gvar_set_function(let(_)).
 is_gvar_set_function(set(_)).
 is_gvar_set_function(clear()).
 
-gvar_interp(SN, Name, Func, Value):- 
-  (nb_current(Name,Data) 
+gvar_interp(M,SN, Name, Func, Value):- 
+  (M:nb_current(Name,Data) 
    -> (is_dict(Data, Tag) 
-      -> gvar_interp5(dict(Data,Tag), SN, Name, Func, Value)
-      ; gvar_interp5(value(Data), SN, Name, Func, Value))
-  ; gvar_interp5(missing, SN, Name, Func, Value)).
+      -> gvar_interp5(M,dict(Data,Tag), SN, Name, Func, Value)
+      ; gvar_interp5(M,value(Data), SN, Name, Func, Value))
+  ; gvar_interp5(M,missing, SN, Name, Func, Value)).
 
-gvar_interp5(dict(Data,_Tag), _SN, _Name, Func, Value):- var(Func),!,get_dict(Func, Data, Value).
-gvar_interp5(dict(Data,Tag), _SN, _Name, Func, Value):- 
+gvar_interp5(M,dict(Data,_Tag), _SN, _Name, Func, Value):- var(Func),!,M:get_dict(Func, Data, Value).
+gvar_interp5(M,dict(Data,Tag), _SN, _Name, Func, Value):- 
   (is_dict_function(Tag,Func)
       -> (!,eval_dict_function(Func, Tag, Data, Value))
       ; (atom(Func)
-         -> get_dict(Func, Data, Value))).
+         -> M:get_dict(Func, Data, Value))).
 
 % checked above?
-% gvar_interp5(_, _, Name, Var, Value):- var(Var),!,make_dot(Name, Var,Value).
-gvar_interp5(_, _, _, Func, _Value):- (\+ compound(Func) ; \+ is_gvar_function(Func),!,fail).
-gvar_interp5(_, _, Name, unify(), Value):-!, gvar_unify(Name,Value).
-gvar_interp5(_, _, Name, current(),Value):-!, nb_current(Name,Value).
-gvar_interp5(_, _, Name, getval(),Value):-!, nb_getval(Name,Value).
+% gvar_interp5(M,_, _, Name, Var, Value):- var(Var),!,make_dot(M,Name, Var,Value).
+gvar_interp5(M,_, _, _, Func, _Value):- (\+ compound(Func) ; \+ is_gvar_function(M,Func),!,fail).
+gvar_interp5(M,_, _, Name, unify(), Value):-!, gvar_unify(M,Name,Value).
+gvar_interp5(M,_, _, Name, current(),Value):-!, M:nb_current(Name,Value).
+gvar_interp5(M,_, _, Name, getval(),Value):-!, M:nb_getval(Name,Value).
 
 % the trick here is an undone linkval
-gvar_interp5(_, _, Name, let(), Value):- !, b_setval(Name,Value),nb_linkval(Name,Value).
-gvar_interp5(_, _, Name, set(), Value):- !, gvar_put(Name,Value).
-gvar_interp5(_, SN,Name, set(Value),'$was_gvar'($SN)):-!, gvar_interp(SN,Name, set, Value).
-gvar_interp5(_, SN,Name, let(Value),'$was_gvar'($SN)):-!, gvar_interp(SN,Name, let, Value).
-gvar_interp5(_, SN,Name, clear(),'$was_gvar'($SN)):-!, nb_delete(Name).
+gvar_interp5(M,_, _, Name, let(), Value):- !, M:b_setval(Name,Value),M:nb_linkval(Name,Value).
+gvar_interp5(M,_, _, Name, set(), Value):- !, gvar_put(M,Name,Value).
+gvar_interp5(M,_, SN,Name, set(Value),'$was_gvar'(M,$SN)):-!, gvar_interp(M,SN,Name, set, Value).
+gvar_interp5(M,_, SN,Name, let(Value),'$was_gvar'(M,$SN)):-!, gvar_interp(M,SN,Name, let, Value).
+gvar_interp5(M,_, SN,Name, clear(),'$was_gvar'(M,$SN)):-!, M:nb_delete(Name).
 
 
-make_dot(Name, Missed,Value):- Value =.. ['.',$(Name),Missed].
+make_dot(M,Name, Missed,M:Value):- Value =.. ['.',$(Name),Missed].
 
-% gvar_unify(Name,Value):- nb_current(Name,Ref),!,freeze(Value,Value=Ref).
-gvar_unify(Name,Value):- nb_current(Name,Was),!,Value=Was.
-gvar_unify(Name,Value):- nb_linkval(Name,Value),freeze(Value,gvar_put(Name, Value)).
+% gvar_unify(M,Name,Value):- nb_current(Name,Ref),!,freeze(Value,Value=Ref).
+gvar_unify(M,Name,Value):- M:nb_current(Name,Was),!,Value=Was.
+gvar_unify(M,Name,Value):- M:nb_linkval(Name,Value),freeze(Value,gvar_put(M,Name, Value)).
 
 
 % Sets a copy and then unifies the value to the copy
-gvar_put(Name,Value):- 
-   nb_setval(Name,Value), % after dupe_term
-   nb_current(Name,Value). %  we still want the same variables (if possible)
+gvar_put(M,Name,Value):- 
+   M:nb_setval(Name,Value), % after dupe_term
+   M:nb_current(Name,Value). %  we still want the same variables (if possible)
 
 
 %% gvar_file_predicates_are_exported() is det.
