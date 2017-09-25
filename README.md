@@ -16,13 +16,13 @@ http://github.com/TeamSPoon/gvar_syntax
 ?- use_module(library(gvar_syntax)).
 true.
 
-?- $foo.value = 1.
+?- $foo.unify() = 1.
 true.
 
-?- $foo.value = 2.
+?- $foo.unify() = 2.
 false.
 
-?- writeln($foo.value).
+?- writeln($foo.get()).
 1
 true.
 
@@ -33,23 +33,23 @@ true.
 ?- $foo.clear().
 true.
 
-?- writeln($foo.value).
+?- writeln($foo.get()).
 _8350
 
-?- writeln($bar.set(2).value).
+?- writeln($bar.set(2).get()).
 2
 
-?- $foo.value = xxxxxxxx.
+?- $foo.set() = xxxxxxxx.
 true.
 
 ?- $baz.set(point{ x: ($foo.get()) , y:vy, z:vz}).
 true.
 
-?- writeln($baz.value.x).
+?- writeln($baz.get().x).
 xxxxxxxx
 true.
 
-?- writeln($baz.x). % will error as you havented acceed the value
+?- writeln($baz.x). % will error as you havent accessed the get()
 
 ```
 
