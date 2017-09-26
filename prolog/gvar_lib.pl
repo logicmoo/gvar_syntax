@@ -110,7 +110,7 @@ use_dot(Type):-
 
 use_dot(Type,M):- 
    \+ current_prolog_flag(dictoo_syntax,false),
-   current_prolog_flag(break_level, 0), 
+   (current_prolog_flag(break_level, 0);source_location(_,_)),
    dot_cache:using_dot_type(Type,M),!.
 
 
