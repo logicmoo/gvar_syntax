@@ -22,8 +22,10 @@
 :- multifile(dot_cache:using_dot_type/2).
 :- dynamic(dot_cache:using_dot_type/2).
 
+:- use_module(library(hook_database)).
 :- reexport(library(debug),[debug/3]).
 :- reexport(library(dicts)).
+:- autoload.
 
 
 :- multifile(dot_intercept/3).
@@ -114,7 +116,7 @@ use_dot(Type):-
 
 use_dot(Type,M):- 
    \+ current_prolog_flag(gvs_syntax,false),
-   (current_prolog_flag(break_level, 0);source_location(_,_);true),
+   (current_prolog_flag(break_level, 0);source_location(_,_)),
    dot_cache:using_dot_type(Type,M),!.
 
 
@@ -160,7 +162,7 @@ is_gvar(_,Self,Name):- % fail,
 %
 %  Wrapper that is callable
 %
-'$was_gvar'(_,_).
+system:'$was_gvar'(_,_).
 
 
 
@@ -258,10 +260,16 @@ gvar_put(M,Name,Value):-
 
 on_bind(V,G):- freeze(V,G).
 
-% :- set_prolog_flag(gvar_syntax,loaded).
-hook_function_expand:- call(( abolish('$expand':function/2), asserta(('$expand':function(DOT2, _) :- compound(DOT2),
-   DOT2=..['.',_,_],
-  \+ current_prolog_flag(gvar_syntax,_), \+ functor([_|_], ., _))))).
+hook_function_expand:- call(( abolish('$expand':function/2), 
+  asserta((
+  '$expand':function(FHead, _) :- 
+      compound(FHead),
+      FHead =.. [.,_,_],
+      \+ current_prolog_flag(gvar_syntax,true),
+      \+ functor([_|_], (.), _))))).
+
+% :- set_prolog_flag(gvar_syntax,true).
+
 /*
 
 expand_dict_function((QFHead := V0 :- Body), (QHead :- Body, Eval)) :-
@@ -356,7 +364,7 @@ expand_gvs_head(Head,OP,M,VarO,Memb,Value):-
   DM =..[F,M],
   gvs_expanded_op(OP),
   VarMemb=..['.',Var,Memb],!,
-  VarO = [F,Var].
+  VarO =.. [F,Var].
 
 % mod: $var.memb = value.
 expand_gvs_head(Head,OP,M,Var,Memb,Value):-
@@ -380,6 +388,7 @@ expand_gvs_head(M:Head,OP,M,Var,Memb,Value):-
   gvs_expanded_op(OP),
   VarMemb=..['.',Var,Memb],!.
 
+dot_invoke(A,B):-dot_intercept(A,B,_).
 
 
 show_gvar(Name):-
@@ -391,6 +400,23 @@ show_gvar(Name):-
 :- dynamic(dot_cache:dictoo_decl/8).
 :- discontiguous(dot_cache:dictoo_decl/8).
 
+simpl_conj(IO,IO):- \+ compound(IO),!.
+simpl_conj((A,B),O):-compound(A),compound(B), 
+  A = dot_intercept(Self, Memb, Value), 
+  B= (Var=Value),
+  var(Value),
+  Value=Var,!,
+  O= dot_intercept(Self, Memb, Value).
+simpl_conj((A,B,P),(O,P)):-compound(A),compound(B), 
+  A = dot_intercept(Self, Memb, Value), 
+  B= (Var=Value),
+  var(Value),
+  Value=Var,!,
+  O= dot_intercept(Self, Memb, Value).
+simpl_conj((A,B),(A,BB)):-!,
+  simpl_conj(B,BB).
+simpl_conj(IO,IO).
+
 show_gvs:- 
    listing(dot_cache:dictoo_decl/8),
    listing(dot_cache:using_dot_type/2),   
@@ -400,23 +426,60 @@ show_gvs:-
    ignore(print_toplevel_variables),
    !.
 
-
-
-
-gvs_ge(Goal, P, _):- 
+gvs_ge3(Goal, P, _):- 
   var(P), \+ source_location(_,_),  
   % notrace(use_dot(_Type)), 
   show_call(gvs(syntax),nb_setval('$goal_term',Goal)),
-  fail.
+  fail.  
 
-gvs_ge(Goal, _P, gvar_op_call(OP,M,Var,Memb,Value) ):- 
+gvs_ge3(Goal, _, GoalO):-
+  \+ current_prolog_flag(enabled_gvs_ge,false),
+  use_dot(_Type),
+  gvs_ge(Goal, GoalM),!,simpl_conj(GoalM,GoalO),Goal\== GoalO.
+
+gvs_ge(Var,Var):- \+ compound(Var),!.
+gvs_ge(call_has_functions(Goal), call_has_functions(Goal)):- !.
+% gvs_ge(assert(MBody), assert(ExpandedBody)):- expand_goal(MBody, ExpandedBody),!,MBody\==ExpandedBody.
+gvs_ge(M:Term, M:TermO):- !, gvs_ge_protected(M,Term, TermO).
+gvs_ge(MTerm, TermO):- !, strip_module(MTerm,M,Term),gvs_ge_protected(M,Term, TermO).
+
+gvs_ge_protected(M,Term, TermO):- 
+       set_prolog_flag(enabled_gvs_ge,false),
+       gvs_ge(M,Term, TermO),
+       set_prolog_flag(enabled_gvs_ge,true).
+
+gvs_ge(M,Term, TermO):- \+ predicate_property(M:Term,meta_predicate(_)), !, gvs_ge2(Term, TermO).
+gvs_ge(_,Term, Term):- \+ compound(Term),!.
+gvs_ge(M,Term, TermO):- !,
+    Term=.. [F|ARGS],
+    predicate_property(M:Term,meta_predicate(MP)),
+    gvs_n_ge(MP,ARGS,1,ARGSO),!,
+    TermM=.. [F|ARGSO],
+    gvs_ge2(TermM, TermMO),!,
+    simpl_conj(TermMO,TermO).
+
+gvs_n_ge(_,[],_,[]):-!.
+gvs_n_ge(MP,[I|ARGS],N,[O|ARGSO]):- 
+    arg(N,MP,Type), (Type== (': '); Type== (*); integer(Type)),!,
+    N2 is N +1,
+    expand_goal(I, O),!,
+    gvs_n_ge(MP,ARGS,N2,ARGSO),!.
+gvs_n_ge(MP,[I|ARGS],N,[I|ARGSO]):-
+  N2 is N +1,gvs_n_ge(MP,ARGS,N2,ARGSO).
+
+gvs_ge2(Var,Var):- \+ compound(Var),!.
+gvs_ge2(M:Term, M:TermO):- !, gvs_ge2(Term, TermO).
+gvs_ge2(call_has_functions(Goal), call_has_functions(Goal)):- !.
+gvs_ge2(FHead, dot_invoke(A,B)):- FHead =.. ['.',A,B],!.
+gvs_ge2('.'(A,B,C), 'dot_intercept'(A,B,C)):-!.
+gvs_ge2(Goal,  gvar_op_call(OP,M,Var,Memb,Value) ):- 
    prolog_load_context(module, M),
-   show_success(gvs(goal_expansion), 
-     M:(expand_gvs_head(Goal,OP,M,Var,Memb,Value),use_dot(_Type,M))),!.
+   show_success(gvs(goal_expansion), M:(expand_gvs_head(Goal,OP,M,Var,Memb,Value),show_failure(use_dot(_Type,M)))),!.
+gvs_ge2(MBody,  ExpandedBody):- expand_functions(MBody, ExpandedBody),!,
+gvs_ge2(IO,IO).
 
-gvs_ge(DOT2, _P,'dot_intercept'(A,B,_)):- DOT2 =.. ['.',A,B],!.
+gvs_ge2(Goal,  O):-  contains_term(Sub,Goal),compound(Sub),functor(Sub,'.',_) ,trace,O=call_has_functions(Goal).
 
-% gvs_ge('.'(A,B,C), _P,'dot_intercept'(A,B,C)):-!.
 
 
 gvs_expand_query(Goal, Goal, Bindings, Bindings):- nb_setval('$query_term',Goal-Bindings).
@@ -520,18 +583,25 @@ toplevel_variables_expand_query(Goal, Expanded, Bindings, ExpandedBindings):-
 
 toplevel_variables_expand_query(Goal, Expanded, Bindings, ExpandedBindings):-
   toplevel_variables:expand_query(Goal, Expanded, Bindings, ExpandedBindings).
-                                 
-:- system:dynamic(goal_expansion/4).
-:- system:multifile(goal_expansion/4).
 
-system:goal_expansion(Goal, P, NewGoal, PO):- gvs_ge(Goal, P, NewGoal),P=PO,!.
 
 :- user:dynamic(term_expansion/4).
 :- user:multifile(term_expansion/4).
 
-user:term_expansion(FDecl,P, _, _) :-
+user:term_expansion(FDecl,P, _, _) :- fail,
    nonvar(P),compound(FDecl),nb_current('$term',Was),
    FDecl==Was,FDecl=(_:-Goal),
    show_call(gvs(syntax),nb_setval('$body_term',Goal)),
    fail.
+
+:- system:dynamic(goal_expansion/4).
+:- system:multifile(goal_expansion/4).
+:- user:dynamic(goal_expansion/4).
+:- user:multifile(goal_expansion/4).
+
+system:goal_expansion(Goal, P, NewGoal, PO):- compound(Goal), gvs_ge3(Goal, P, NewGoal),P=PO,!.
+
+%:- set_prolog_flag(toplevel_goal_expansion,false).
+%:- set_prolog_flag(gvar_syntax_no_functions, false).
+%:- set_prolog_flag(scope_functions,true).
 

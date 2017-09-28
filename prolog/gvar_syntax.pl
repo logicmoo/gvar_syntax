@@ -18,7 +18,7 @@
    SM:use_module(library(gvar_lib)).
 
 % for debugging
-:- set_prolog_flag(toplevel_goal_expansion, false).
+% :- set_prolog_flag(toplevel_goal_expansion, false).
 
 
 
