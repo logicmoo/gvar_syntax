@@ -17,4 +17,8 @@
 :- dot_cache:using_dot_type(gvar_syntax,SM),!,
    SM:use_module(library(gvar_lib)).
 
+% for debugging
+:- set_prolog_flag(toplevel_goal_expansion, false).
+
+
 

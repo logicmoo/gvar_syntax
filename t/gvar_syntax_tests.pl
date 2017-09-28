@@ -1,9 +1,20 @@
 
 :- use_module(library(gvar_syntax)).
+% :- use_module(library(must_rtrace)).
 
-% :- set_prolog_flag(gvar_syntax_scope,module).
+%:- debug(dictoo(goal_expand)).
+% :- debug(gvs(_)).
+%:- debug(dictoo(_)).
+
+:- set_prolog_flag(must_saftey,3).
+:- set_prolog_flag(must_debug,0).
+:- set_prolog_flag(must_speed,0).
+
+:- set_prolog_flag(must_type,keep_going).
+
 
 :- $foo.set() = 1.
+
 
 test(0):- \+ $foo.current() = 2.
 
@@ -29,6 +40,7 @@ test(10):- $baz.set($baz.current().put(y,yYYYY)).
 
 test(11):- $baz.current().y == yYYYY.
 
-all_tests:- forall(test(_),true).
+all_tests:- forall(clause(test(X),Body),(dmsg(test(X)),must(Body))).
 
 :- listing(test(_)).
+
