@@ -358,7 +358,9 @@ gvar_file_predicates_are_transparent(S,LC):-
 
 is_dvar(Var):- \+ compound(Var),!,fail.
 is_dvar($(_)):- use_dot(_).
-is_dvar(?(_)):- use_dot(dvars).
+is_dvar(?(_)):- use_dot(qvars).
+is_dvar('@'(_)):- use_dot(atvars).
+is_dvar(the(_)):- use_dot(thevars).
 
 dot3(VarMemb,Var,Memb):- VarMemb=..['.',Var,Memb].
 
