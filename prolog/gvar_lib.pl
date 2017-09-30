@@ -100,7 +100,7 @@ dot_eval( Self,Func,Value):- is_dict(Self),!,dot_dict(Self, Func, Value).
 dot_eval(MSelf,Func,Value):- strip_module(MSelf,M,_Self),dot_intercept(M,MSelf,Func,Value).
 
 :- module_transparent(dot_intercept/4).
-% dot_intercept(M,Self,Func,Value):- notrace((use_dot(_,M),nonvar(Value), \+ current_prolog_flag(gvar_nondict_ok,false))),!,Value =.. ['.',Self,Func].
+% dot_intercept(M,Self,Func,Value):- notrace((use_dot(_,M),nonvar(Value), \+ current_prolog_flag(gvar_lazy,false))),!,Value =.. ['.',Self,Func].
 
 dot_intercept(M,Self,Func,Value):- 
    ((once((show_failure(is_dot_hook(M,Self,Func,Value)),show_failure(use_dot(_,M)))) -> dot_overload_hook(M,Self,Func,Value)) *-> true ;
@@ -109,7 +109,7 @@ dot_intercept(M,Self,Func,Value):-
 
 :- module_transparent(dot_intercept_lazy/4).
 
-dot_intercept_lazy(M,Self,Func,Value):- \+ is_dict(Self), \+ current_prolog_flag(gvar_nondict_ok,false),!,
+dot_intercept_lazy(M,Self,Func,Value):- \+ is_dict(Self), \+ current_prolog_flag(gvar_lazy, false),!,
   % Value =.. ['.',Self,Func],  
   on_bind(Self,dot_intercept(M,Self,Func,Value)).
 dot_intercept_lazy(M,Self,Func,Value):- M:dot_dict(Self, Func, Value).
