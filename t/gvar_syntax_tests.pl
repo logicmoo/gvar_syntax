@@ -16,7 +16,7 @@
 :- $foo.set() = 1.
 
 
-test(0):- \+ $foo.current() = 2.
+test(0):- $foo.set() = 1,  \+ ($foo.current() = 2).
 
 test(1):- writeln($foo.current()).
 
