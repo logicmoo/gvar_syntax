@@ -14,6 +14,7 @@
           nb_link_value/3, % +Key, +Value
           tracker_reset/1,
           get_current_tracker/2,
+          show_name_values/0,
  push_tracker_frame/0
  ]).
 /** <module> gapi - Global Variable Strorage
@@ -30,20 +31,42 @@
 
 :- (( \+ nb_current('$tracker',_)) -> true; (rb_empty(Tracker),nb_setval('$tracker',[Tracker]))).
 
+show_name_values:- 
+ ignore(forall(nb_current_value(gvar(_),N,V),show_name_value(N,V))).
+ % ignore(forall(nb_current_value(0,N,V),show_name_value(N,V))).
+
+show_name_value(N,V):- (atomic(N)->true; \+ atomic(V)), format('~N~n',[]),fail.
+show_name_value(N,V):-  attvar(V),!, fmt9( N :- V ).
+show_name_value(N,V):-  \+ compound(V),!,format( '~q :- ~q.~n', [N , V] ).
+show_name_value(N,Tree):- is_rbtree(Tree),   
+   (rb_empty(Tree) -> must(fmt( N = is_rbtree_empty(Tree)));
+     forall(nb_current_value(Tree,NS,V),show_name_value('::'(N,NS),V))),!.
+
+show_name_value(N,List):- is_list(List),  (( \+ \+ ((member(M,List),  (compound(M);attvar(M))))) -> 
+  forall(nth1(I,List,V),show_name_value('::'(N,I),V));
+  fmt9( N :- List)) ,!.
+show_name_value(N,V):-  fmt9( N :- V ).
+  
+
+
+
 % gvar_rbv
 % gvar_v
 % rbv
 
 nb_current_value(N,V):- quietly(nonvar(N)->once(((context_default(Ctx), nb_current_value(Ctx,N,V))));(((context_default(Ctx), nb_current_value(Ctx,N,V))))).
 nb_current_value(gvar(Type),N,V):- (nonvar(Type)->!;true), nb_current(N,V0),V0\==[],get_value_value(Type,V0,V).
+nb_current_value(Tracker,N,V):- is_rbtree(Tracker),!,rb_in(N,_,Tracker),rb_lookup(N,V0,Tracker),must(get_value_value(rbv,V0,V)).
 nb_current_value(Var,N,V):- nonvar(Var),Var=[E|List], !, member(Ctx,[E|List]),nb_current_value(Ctx,N,V),!.
-nb_current_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),rb_in(N,_,Tracker),rb_lookup(N,V0,Tracker),get_value_value(rbv,V0,V).
+nb_current_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),nb_current_value(Tracker,N,V).
 
 nb_link_value(N,V):- quietly((context_default(Ctx), nb_link_value(Ctx,N,V))),!.
+
+nb_link_value(Tracker,N,V):- is_rbtree(Tracker),!,nb_rb_link(Tracker,N,V).
+nb_link_value([E|List],N,V):- nonvar(E),!, member(Ctx,[E|List]),nb_link_value(Ctx,N,V),!.
 nb_link_value(gvar(v),N,V):- !, nb_linkval(N,V).
 nb_link_value(gvar(_),N,V):- !, nb_current(N,Was),!,(((compound(Was),Was=rbv(_)))->nb_setarg(1,Was,V);nb_linkval(N,V)).
-nb_link_value([E|List],N,V):- !, member(Ctx,[E|List]),nb_link_value(Ctx,N,V),!.
-nb_link_value(Ctx,N,D):- get_current_tracker(Ctx,Tracker),!,nb_rb_link(Tracker,N,D).
+nb_link_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),!,nb_rb_link(Tracker,N,V).
 
 dupe_same(X,Y):- duplicate_term(X,Y),X=Y.
 
