@@ -29,7 +29,7 @@
 
 */
 
-:- (( \+ nb_current('$tracker',_)) -> true; (rb_empty(Tracker),nb_setval('$tracker',[Tracker]))).
+:- (( \+ nb_current('$tracker',_)) -> true; (oo_empty(Tracker),nb_setval('$tracker',[Tracker]))).
 
 show_name_values:- 
  ignore(forall(nb_current_value(gvar(_),N,V),show_name_value(N,V))).
@@ -38,8 +38,8 @@ show_name_values:-
 show_name_value(N,V):- (atomic(N)->true; \+ atomic(V)), format('~N~n',[]),fail.
 show_name_value(N,V):-  attvar(V),!, fmt9( N :- V ).
 show_name_value(N,V):-  \+ compound(V),!,format( '~q :- ~q.~n', [N , V] ).
-show_name_value(N,Tree):- is_rbtree(Tree),   
-   (rb_empty(Tree) -> must(fmt( N = is_rbtree_empty(Tree)));
+show_name_value(N,Tree):- is_ootree(Tree),   
+   (oo_empty(Tree) -> must(fmt( N = is_ootree_empty(Tree)));
      forall(nb_current_value(Tree,NS,V),show_name_value('::'(N,NS),V))),!.
 
 show_name_value(N,List):- is_list(List),  (( \+ \+ ((member(M,List),  (compound(M);attvar(M))))) -> 
@@ -48,68 +48,72 @@ show_name_value(N,List):- is_list(List),  (( \+ \+ ((member(M,List),  (compound(
 show_name_value(N,V):-  fmt9( N :- V ).
   
 
+:- meta_predicate fail_if_undefined(0).
+fail_if_undefined(G):-catch(G,existence_error(_,_),fail).
 
-
-% gvar_rbv
+% gvar_oov
 % gvar_v
-% rbv
+% oov
 
 nb_current_value(N,V):- quietly(nonvar(N)->once(((context_default(Ctx), nb_current_value(Ctx,N,V))));(((context_default(Ctx), nb_current_value(Ctx,N,V))))).
+
 nb_current_value(gvar(Type),N,V):- (nonvar(Type)->!;true), nb_current(N,V0),V0\==[],get_value_value(Type,V0,V).
-nb_current_value(Tracker,N,V):- is_rbtree(Tracker),!,rb_in(N,_,Tracker),rb_lookup(N,V0,Tracker),must(get_value_value(rbv,V0,V)).
+nb_current_value(Tracker,N,V):- is_ootree(Tracker),!,oo_in(N,_,Tracker),oo_lookup(N,V0,Tracker),must(get_value_value(oov,V0,V)).
 nb_current_value(Var,N,V):- nonvar(Var),Var=[E|List], !, member(Ctx,[E|List]),nb_current_value(Ctx,N,V),!.
 nb_current_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),nb_current_value(Tracker,N,V).
 
 nb_link_value(N,V):- quietly((context_default(Ctx), nb_link_value(Ctx,N,V))),!.
 
-nb_link_value(Tracker,N,V):- is_rbtree(Tracker),!,nb_rb_link(Tracker,N,V).
+nb_link_value(Tracker,N,V):- is_ootree(Tracker),!,nb_oo_link(Tracker,N,V).
 nb_link_value([E|List],N,V):- nonvar(E),!, member(Ctx,[E|List]),nb_link_value(Ctx,N,V),!.
 nb_link_value(gvar(v),N,V):- !, nb_linkval(N,V).
-nb_link_value(gvar(_),N,V):- !, nb_current(N,Was),!,(((compound(Was),Was=rbv(_)))->nb_setarg(1,Was,V);nb_linkval(N,V)).
-nb_link_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),!,nb_rb_link(Tracker,N,V).
+nb_link_value(gvar(_),N,V):- !, nb_current(N,Was),!,(((compound(Was),Was=oov(_)))->nb_setarg(1,Was,V);nb_linkval(N,V)).
+nb_link_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),!,nb_oo_link(Tracker,N,V).
 
 dupe_same(X,Y):- duplicate_term(X,Y),X=Y.
 
-nb_rb_link(Tracker,N,V):- 
-  (nb_rb_get_node(Tracker,N,Node)
-    -> (dupe_same(rbv(V),D),nb_rb_set_node_value(Node,D))
-    ;  nb_rb_insert(Tracker,N,rbv(V))).
-
 /*
-nb_rb_link(Tracker,N,V):- 
-  (nb_rb_get_node(Tracker,N,Node)
-    -> (dupe_same(V,D),nb_rb_node_value(Node,RBV),nb_linkarg(1,RBV,D))
-    ;  nb_rb_insert(Tracker,N,rbv(V))).
+nb_oo_link(Tracker,N,V):- 
+  (nb_oo_get_node(Tracker,N,Node)
+    -> (dupe_same(V,D),nb_oo_node_value(Node,RBV),nb_linkarg(1,RBV,D))
+    ;  nb_oo_insert(Tracker,N,oov(V))).
 */
 
 nb_set_value(N,V):- quietly((context_default(Ctx), nb_set_value(Ctx,N,V))),!.
+nb_set_value(Attvar,N,V):- attvar(Attvar),!,oo_set(Attvar,N,V).
 nb_set_value(gvar(v),N,V):- !, nb_setval(N,V).
-nb_set_value(gvar(_),N,D):- !, nb_current(N,Was),!,(((compound(Was),Was=rbv(_)))->(duplicate_term(D,V),nb_setarg(1,Was,V));nb_setval(N,D)).
+nb_set_value(gvar(_),N,D):- !, nb_current(N,Was),!,(((compound(Was),Was=oov(_)))->(duplicate_term(D,V),nb_setarg(1,Was,V));nb_setval(N,D)).
 nb_set_value([E|List],N,V):- !, member(Ctx,[E|List]),nb_set_value(Ctx,N,V),!.
-nb_set_value(Ctx,N,D):- get_current_tracker(Ctx,Tracker),!,mcopy_term(D,V),nb_rb_link(Tracker,N,V),!.
+nb_set_value(Ctx,N,D):- get_current_tracker(Ctx,Tracker),!,mcopy_term(D,V),nb_oo_link(Tracker,N,V),!.
 mcopy_term(X,X).
 
 b_set_value(N,V):- quietly((context_default(Ctx), b_set_value(Ctx,N,V))),!.
+b_set_value(Attvar,N,V):- attvar(Attvar),!,oo_put_attr(Attvar,N,V).
 b_set_value(gvar(v),N,V):- !, b_setval(N,V).
-b_set_value(gvar(_),N,V):- !, nb_current(N,Was),!,(((compound(Was),Was=rbv(_)))->setarg(1,Was,V);b_setval(N,V)).
+b_set_value(gvar(_),N,V):- !, nb_current(N,Was),!,(((compound(Was),Was=oov(_)))->setarg(1,Was,V);b_setval(N,V)).
 b_set_value([E|List],N,V):- !, member(Ctx,[E|List]),b_set_value(Ctx,N,V),!.
 b_set_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),
-  (rb_lookup(N,RBV,Tracker)-> setarg(1,RBV,V) ; (RBV=rbv([]),nb_rb_insert(Tracker,N,RBV),setarg(1,RBV,V))).
+  (oo_lookup(N,RBV,Tracker)-> setarg(1,RBV,V) ; (RBV=oov([]),nb_oo_insert(Tracker,N,RBV),setarg(1,RBV,V))).
+
 
 b_get_value(N,V):- quietly((context_default(Ctx), b_get_value(Ctx,N,V))),!.
+b_get_value(Attvar,N,V):- attvar(Attvar),!,oo_get_attr(Attvar,N,V).
 b_get_value(gvar(Type),N,V):- !,b_getval(N,V0),get_value_value(Type,V0,V).
 b_get_value([E|List],N,V):- !, member(Ctx,[E|List]),b_get_value(Ctx,N,V),!.
-b_get_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),rb_lookup(N,RBV,Tracker),!,arg(1,RBV,V).
+b_get_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),oo_lookup(N,RBV,Tracker),!,maybe_deref(RBV,V).
 
+
+maybe_deref(RBV,O):- (compound(RBV),RBV=oov(O))->true;O=RBV.
 
 nb_get_value(N,V):- context_default(Ctx), nb_get_value(Ctx,N,V),!.
+
 nb_get_value(Ctx,N,V):- b_get_value(Ctx,N,V).
 
+reset_oo_tree(Tracker):- oo_empty(X),arg(1,X,L),arg(2,X,R),nb_setarg(1,Tracker,L),nb_setarg(2,Tracker,R).
 
-reset_rb_tree(Tracker):- rb_empty(X),arg(1,X,L),arg(2,X,R),nb_setarg(1,Tracker,L),nb_setarg(2,Tracker,R).
-tracker_reset(Ctx):-get_current_tracker(Ctx,Tracker),reset_rb_tree(Tracker).
-tracker_reset:- rb_empty(Tracker),nb_setval('$tracker',[Tracker]).
-push_tracker_frame :- rb_empty(Tracker),nb_current('$tracker',Trackers),b_setval('$tracker',[Tracker|Trackers]).
+tracker_reset(Ctx):-get_current_tracker(Ctx,Tracker),reset_oo_tree(Tracker).
+tracker_reset:- oo_empty(Tracker),nb_setval('$tracker',[Tracker]).
+push_tracker_frame :- oo_empty(Tracker),nb_current('$tracker',Trackers),b_setval('$tracker',[Tracker|Trackers]).
 get_nth_tracker(Ctx,Tracker):- nb_current('$tracker',Trackers)->nth_tracker(Ctx,Trackers,Tracker);(tracker_reset,nb_current('$tracker',Trackers),nth_tracker(Ctx,Trackers,Tracker)).
 
 
@@ -118,29 +122,30 @@ context_default(gvar(v)).
 
 get_current_tracker(Tracker):- context_default(Ctx), get_current_tracker(Ctx,Tracker).
 
-get_current_tracker(Ctx,Ctx):- nonvar(Ctx),is_rbtree(Ctx),!.
+get_current_tracker(Ctx,Ctx):- nonvar(Ctx),is_ootree(Ctx),!.
 get_current_tracker(Ctx,Tracker):- compound(Ctx),!,get_named_tracker(Ctx,Tracker).
 get_current_tracker(Ctx,Tracker):- get_nth_tracker(Ctx,Tracker).
 
 nth_tracker(Ctx,Trackers,Tracker):- nth0(Ctx,Trackers,Tracker).
 
-set_named_tracker(#(Ctx),Tracker):- (var(Tracker)->rb_empty(Tracker);true),nb_linkval(Ctx,Tracker).
-set_named_tracker(?(Ctx),Tracker):- (var(Tracker)->rb_empty(Tracker);true),
+set_named_tracker(#(Ctx), 
+         Tracker):- (var(Tracker)->oo_empty(Tracker);true),nb_linkval(Ctx,Tracker).
+set_named_tracker(?(Ctx),Tracker):- (var(Tracker)->oo_empty(Tracker);true),
   get_nth_tracker(0,TrackerTracker),
   nb_link_value(TrackerTracker,Ctx,Tracker).
 
-get_named_tracker(#(Ctx),Tracker):- nb_current(Ctx,Tracker)->assertion(is_rbtree(Tracker));set_named_tracker(#(Ctx),Tracker).
+get_named_tracker(#(Ctx),Tracker):- nb_current(Ctx,Tracker)->assertion(is_ootree(Tracker));set_named_tracker(#(Ctx),Tracker).
 get_named_tracker(?(Ctx),Tracker):- get_nth_tracker(0,TrackerTracker),
-     (nb_get_value(TrackerTracker,Ctx,Tracker) -> assertion(is_rbtree(Tracker)) ; 
-        (rb_empty(Tracker),nb_link_value(TrackerTracker,Ctx,Tracker))).
+     (nb_get_value(TrackerTracker,Ctx,Tracker) -> assertion(is_ootree(Tracker)) ; 
+        (oo_empty(Tracker),nb_link_value(TrackerTracker,Ctx,Tracker))).
 
 
 get_value_value(v,V0,V):- \+ compound(V0),!,V0=V.
-get_value_value(rbv,rbv(V0),V):- !,V0=V.
+get_value_value(oov,oov(V0),V):- !,V0=V.
 get_value_value(v,V0,V):- !,V0=V.
 
 set_value_value(v,V0,V):- V0=V.
-set_value_value(rbv,V,rbv(V0)):- !,V0=V.
+set_value_value(oov,V,oov(V0)):- !,V0=V.
 
 
 
@@ -187,7 +192,51 @@ gvar_file_predicates_are_transparent(S,LC):-
   \+ atom_concat('__aux',_,F),
    nop(debug(modules,'~N:- module_transparent((~q)/~q).~n',[F,A]))))))).
 
+
+b_get_oo_value(Tree,N,V):-  oo_lookup(N,RBV,Tree),!,arg(1,RBV,V).
+nb_get_oo_value(Ctx,N,V):- b_get_value(Ctx,N,V).
+reset_oo(Tree):- oo_empty(X),arg(1,X,L),arg(2,X,R),nb_setarg(1,Tree,L),nb_setarg(2,Tree,R).
+oo_put_value(Tree,N,V):- % as_ref(Tree0,Tree),
+  (oo_lookup(N,RBV,Tree)-> setarg(1,RBV,V) ; (RBV=oov([]),nb_oo_insert(Tree,N,RBV),setarg(1,RBV,V))).
+nb_oo_link(Tree,N,V):- 
+  (nb_oo_get_node(Tree,N,Node)
+    -> (dupe_same(oov(V),D),nb_oo_set_node_value(Node,D))
+    ;  nb_oo_insert(Tree,N,oov(V))).
+
+
+is_ootree(Tree):- is_rbtree(Tree),!.
+is_ootree(Tree):- is_dict(Tree),!.
+is_ootree(Tree):- fail_if_undefined(is_oo(Tree)).
+
+oo_new(rbtree,Tree) :- rb_new(Tree).
+oo_new(_,Dict) :- fail_if_undefined(new_oo(_,_,Dict)).
+
+oo_empty(Tree):- is_rbtree(Tree),!,rb_empty(Tree).
+oo_empty(Tree):- is_dict(Tree),!,Tree=_{}.
+
+nb_oo_insert(Tree, Key, Value):- is_rbtree(Tree),!,nb_rb_insert(Tree,Key,Value).
+nb_oo_insert(Tree, Key, Value):- fail_if_undefined(oo_set(Tree,Key,Value)).
+
+nb_oo_set_node_value(node(Tree, Key), Value):- !, fail_if_undefined(oo_set(Tree,Key,Value)).
+nb_oo_set_node_value(Node, Value):- nb_rb_set_node_value(Node, Value).
+nb_oo_node_value(node(Tree, Key), Value):- !, fail_if_undefined(oo_get_attr(Tree,Key,Value)).
+nb_oo_node_value(Node, Value):- nb_rb_node_value(Node, Value).
+
+nb_oo_get_node(Tree, Key, Node):- is_rbtree(Tree),!,nb_rb_get_node(Tree, Key, Node). 
+nb_oo_get_node(Tree, Key, node(Tree, Key)).
+
+oo_in(Key, Value, Tree):- is_rbtree(Tree),!,rb_in(Key, Value, Tree).
+oo_in(Key, Value, Tree):- is_dict(Tree),!,get_dict(Key,Tree,Value).
+oo_in(Key, Value, Tree):- fail_if_undefined(oo_get_attr(Tree,Key,Value)).
+
+oo_lookup(Key, Value, Tree):- is_rbtree(Tree),!,rb_lookup(Key, Value, Tree).
+oo_lookup(Key, Value, Tree):- fail_if_undefined(oo_get_attr(Tree,Key,Value)).
+
 :- 
    gvar_file_predicates_are_exported,
    gvar_file_predicates_are_transparent.
+
+:- if(exists_source(library(dictoo_lib))).
+:- use_module(library(dictoo_lib)).
+:- endif.
 

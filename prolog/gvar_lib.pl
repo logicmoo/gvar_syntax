@@ -275,7 +275,7 @@ gvar_put(M,Name,ValueI):- duplicate_term(ValueI,Value),ValueI=Value,
 
 
 
-on_bind(V,G):-var(V),!,freeze(V,G).
+on_bind(V,G):- var(V),!,freeze(V,G).
 on_bind(V,G):-term_variables(V,Vs),
   (Vs==[] ->G ; (make_binds(Vs,VsG),!,when(VsG,G))).
 
