@@ -2,8 +2,8 @@
 [
  is_gvar/3,       % +Module, +Self, -Name
  gvar_must/4,     % +Module, +GVar, +Func, ?Value
- gvar_call/4,     % +Module, +GVar, +Func, ?Value
- '$was_gvar'/2       % +Module, +GVar
+ gvar_call/4     % +Module, +GVar, +Func, ?Value
+ %'$was_gvar'/2       % +Module, +GVar
  ]).
 /** <module> gvlib - Global Variable Syntax
 
