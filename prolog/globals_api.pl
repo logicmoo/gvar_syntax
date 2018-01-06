@@ -131,7 +131,7 @@ get_current_tracker(Ctx,Ctx):- nonvar(Ctx),is_ootree(Ctx),!.
 get_current_tracker(Ctx,Tracker):- compound(Ctx),!,get_named_tracker(Ctx,Tracker),!.
 get_current_tracker(Ctx,Tracker):- get_nth_tracker(Ctx,Tracker),!.
 
-nth_tracker(Ctx,Trackers,Tracker):- nth0(Ctx,Trackers,Tracker).
+nth_tracker(Ctx,Trackers,Tracker):- (integer(Ctx);var(Ctx)),nth0(Ctx,Trackers,Tracker).
 
 set_named_tracker(#(Ctx), 
          Tracker):- (var(Tracker)->oo_empty(Tracker);true),nb_linkval(Ctx,Tracker).
