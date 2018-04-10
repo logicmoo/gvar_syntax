@@ -8,4 +8,4 @@ author( 'Douglas R. Miles', 'logicmoo@gmail.com' ).
 packager( 'TeamSPoon/LogicMoo', 'https://github.com/TeamSPoon/' ).
 maintainer( 'TeamSPoon', 'https://github.com/TeamSPoon/' ).
 home('https://github.com/TeamSPoon/gvar_syntax').
-requires(must_trace).
+%requires(must_trace).
