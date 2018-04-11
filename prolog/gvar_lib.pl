@@ -22,7 +22,7 @@
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
 
-:- use_module(library(hook_database)).
+%:- use_module(library(hook_database)).
 :- reexport(library(debug),[debug/3]).
 :- reexport(library(dicts)).
 :- reexport(library(globals_api)).
