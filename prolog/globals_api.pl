@@ -85,6 +85,7 @@ nb_oo_link(Tracker,N,V):-
 nb_set_value(N,V):- quietly((context_default(Ctx), nb_set_value(Ctx,N,V))),!.
 
 nb_set_value(Attvar,N,V):- attvar(Attvar),!,nb_put_attr(Attvar,N,V).
+nb_set_value(Attvar,N,V):- is_dict(Attvar),!,nb_put_attr(Attvar,N,V).
 nb_set_value(gvar(v),N,V):- !, nb_setval(N,V).
 nb_set_value(gvar(_),N,D):- !, nb_current(N,Was),!,(((compound(Was),Was=oov(_)))->(duplicate_term(D,V),nb_setarg(1,Was,V));nb_setval(N,D)).
 nb_set_value([E|List],N,V):- !, member(Ctx,[E|List]),nb_set_value(Ctx,N,V),!.
