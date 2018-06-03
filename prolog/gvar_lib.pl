@@ -622,9 +622,9 @@ user:term_expansion(FDecl,P, _, _) :- fail,
 contains_dot(Goal):- compound(Goal),
   (compound_name_arity(Goal,'.',2);(arg(_,Goal,Arg),contains_dot(Arg))).
 
-system:goal_expansion(Goal, P, NewGoal, PO):- compound(Goal),
-   \+ current_prolog_flag(gvs_syntax,false),
-  contains_dot(Goal),quietly(use_dot(_)),
+system:goal_expansion(Goal, P, NewGoal, PO):- 
+  notrace((\+ current_prolog_flag(gvs_syntax,false))),
+  notrace((compound(Goal),contains_dot(Goal))),quietly(use_dot(_)),
   show_call(gvar(syntax),((dot_ge(Goal, P, NewGoal)))),  
   P=PO,!.
 
