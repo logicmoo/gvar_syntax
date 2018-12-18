@@ -196,8 +196,9 @@ gvar_file_predicates_are_transparent(S,LC):-
   ignore(((\+ predicate_property(M:H,transparent), ignore( LC = M), 
   module_transparent(M:F/A), 
   \+ atom_concat('__aux',_,F),
-   nop(debug(modules,'~N:- module_transparent((~q)/~q).~n',[F,A]))))))).
+   gv_nop(debug(modules,'~N:- module_transparent((~q)/~q).~n',[F,A]))))))).
 
+gv_nop(_).
 
 
 b_get_oo_value(Tree,N,V):-  oo_lookup(N,RBV,Tree),!,arg(1,RBV,V).
