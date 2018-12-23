@@ -22,7 +22,7 @@
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
 
-%:- use_module(library(hook_database)).
+:- use_module(library(must_sanity)).
 :- reexport(library(debug),[debug/3]).
 :- reexport(library(dicts)).
 :- reexport(library(globals_api)).
@@ -119,11 +119,11 @@ dot_intercept_lazy(M,Self,Func,Value):- M:dot_dict(Self, Func, Value).
 
 
 use_dot(Type):- 
-  quietly(( prolog_load_context(module, M),
+  notrace(( prolog_load_context(module, M),
    use_dot(Type,M))).
 
 use_dot(Type,M):- 
-   quietly((  \+ current_prolog_flag(gvs_syntax, false),
+   notrace((  \+ current_prolog_flag(gvs_syntax, false),
    (current_prolog_flag(break_level, 0);source_location(_,_)),
    dot_cfg:using_dot_type(Type,M))),!.
 
@@ -530,9 +530,10 @@ expand_functions(M, Body, ExpandedBody) :-
 
 user:expand_query(Goal, _, Bindings, _ ):- quietly(use_dot(_Type)), nb_setval('$query_term',Goal-Bindings),fail.
 
-user:expand_query(Goal, Expanded, Bindings, ExpandedBindings):- % quietly(use_dot(_Type)),
+user:expand_query(Goal, Expanded, Bindings, ExpandedBindings):- 
+    % quietly(use_dot(_Type)),
     % Have vars to expand and varnames are empty
-    quietly((Bindings\==[],prolog_load_context(variable_names,Vs), Vs ==[])),
+    ((Bindings\==[],prolog_load_context(variable_names,Vs), Vs ==[])),
     b_setval('$variable_names', Bindings),  % this prevents the loop
     % debug(expand_query,'~q',[b_setval('$variable_names', Bindings)]),
     (toplevel_variables_expand_query(Goal, Expanded0, Bindings, ExpandedBindings0) -> true; 
@@ -624,7 +625,7 @@ contains_dot(Goal):- compound(Goal),
 
 system:goal_expansion(Goal, P, NewGoal, PO):- 
   notrace((\+ current_prolog_flag(gvs_syntax,false))),
-  notrace((compound(Goal),contains_dot(Goal))),quietly(use_dot(_)),
+  notrace((compound(Goal),contains_dot(Goal))),(use_dot(_)),
   show_call(gvar(syntax),((dot_ge(Goal, P, NewGoal)))),  
   P=PO,!.
 
