@@ -249,15 +249,15 @@ gvar_interp5(M,_, _, Name, value(),Value):-!, M:((nb_current_value(Name,Value); 
 
 % TODO needs to survive later nb_* calls 
 gvar_interp5(M,_, _, Name, let(), Value):- !, M:b_set_value(Name,Value). 
-gvar_interp5(M,_, SN,Name, let(Value),'$was_gvar'(M,$SN)):- M:b_set_value(Name,Value).
+gvar_interp5(M,_, SN,Name, let(Value),'$was_gvar'(M,'$'(SN))):- M:b_set_value(Name,Value).
 
 
 gvar_interp5(M,_, _, Name, set(), Value):- must(M:nb_link_value(Name,Value)), !, on_bind(Value,gvar_put(M,Name,Value)).
-gvar_interp5(M,_, SN,Name, set(Value),'$was_gvar'(M,$SN)):- gvar_put(M,Name,Value),!.
+gvar_interp5(M,_, SN,Name, set(Value),'$was_gvar'(M,'$'(SN))):- gvar_put(M,Name,Value),!.
 
 
-gvar_interp5(M,_, SN,Name, clear(),'$was_gvar'(M,$SN)):-!, M:nb_set_value(Name,_).
-gvar_interp5(M,_, SN,Name, delete(),'$was_gvar'(M,$SN)):-!, M:nb_delete(Name).
+gvar_interp5(M,_, SN,Name, clear(),'$was_gvar'(M,'$'(SN))):-!, M:nb_set_value(Name,_).
+gvar_interp5(M,_, SN,Name, delete(),'$was_gvar'(M,'$'(SN))):-!, M:nb_delete(Name).
 
 
 make_dot(M,Name, Missed,M:Value):- Value =.. ['.',$(Name),Missed].
