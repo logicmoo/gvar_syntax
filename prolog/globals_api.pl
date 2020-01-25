@@ -30,21 +30,29 @@
 */
 
 show_name_values:- 
- ignore(forall(nb_current_value(gvar(_),N,V),show_name_value(N,V))).
+ ignore(forall(nb_current_value(gvar(_),N,V),show_name_value(N,V))),
+ format('~N~n',[]).
  % ignore(forall(nb_current_value(0,N,V),show_name_value(N,V))).
 
-show_name_value(N,V):- (atomic(N)->true; \+ atomic(V)), format('~N~n',[]),fail.
-show_name_value(N,V):-  attvar(V),!, fmt9( N :- V ).
-show_name_value(N,V):-  \+ compound(V),!,format( '~q :- ~q.~n', [N , V] ).
-show_name_value(N,Tree):- is_ootree(Tree),   
-   (oo_empty(Tree) -> must(fmt( N = is_ootree_empty(Tree)));
-     forall(nb_current_value(Tree,NS,V),show_name_value('::'(N,NS),V))),!.
+show_name_value(N,_):- atomic(N),format('~N~n',[]),fail.
+show_name_value(N,V):-  attvar(V),!, show_name_value_0(N,V).
+show_name_value(N,V):-  \+ compound(V), !, show_name_value_0(N,V).
+show_name_value(N,Tree):- is_ootree(Tree),
+    ignore(((oo_empty(Tree), show_name_value_0(N,is_ootree_empty(Tree))))),
+    forall(nb_current_value(Tree,NS,V),show_name_value('-'(N,NS),V)),!.
 
-show_name_value(N,List):- is_list(List),  (( \+ \+ ((member(M,List),  (compound(M);attvar(M))))) -> 
-  forall(nth1(I,List,V),show_name_value('::'(N,I),V));
-  fmt9( N :- List)) ,!.
-show_name_value(N,V):-  fmt9( N :- V ).
-  
+show_name_value(N,List):- fail,is_list(List), (( \+ \+ ((member(M,List),  (compound(M);attvar(M)))))),!,
+  forall(nth1(I,List,V),show_name_value('::'(N,I),V)),!. 
+show_name_value(N,V):-show_name_value_0(N,V).
+
+% show_name_value_0('::'(N,I),V):- format( '~N ~p == ~q.~n', [N , V] ).
+show_name_value_0(N,V):- simplify_printing(V,VV), format( '~N ~p == ~p.~n', [N , VV] ).
+%   fmt9( gapi(N) :- V ).
+
+
+% simplify_printing(VV,V):- compound(V),compound_name_arguments(V,N,VAs),
+simplify_printing(V,V).
+
 
 :- meta_predicate fail_if_undefined(0).
 fail_if_undefined(G):-catch(G,existence_error(_,_),fail).
@@ -57,7 +65,8 @@ nb_current_value(N,V):- quietly(nonvar(N)->once(((context_default(Ctx), nb_curre
 
 nb_current_value(Attvar,N,V):- attvar(Attvar),!,just_attrs(Attvar,N),get_attr(Attvar,N,V).
 nb_current_value(gvar(Type),N,V):- (nonvar(Type)->!;true), nb_current(N,V0),V0\==[],get_value_value(Type,V0,V).
-nb_current_value(Tracker,N,V):- is_ootree(Tracker),!,oo_in(N,_,Tracker),oo_lookup(N,V0,Tracker),must(get_value_value(oov,V0,V)).
+nb_current_value(Tracker,N,V):- is_ootree(Tracker),!,oo_in(N,_,Tracker),oo_lookup(N,V0,Tracker),
+  must(get_value_value(oov,V0,V)).
 nb_current_value(Var,N,V):- nonvar(Var),Var=[E|List], !, member(Ctx,[E|List]),nb_current_value(Ctx,N,V),!.
 nb_current_value(Ctx,N,V):- get_current_tracker(Ctx,Tracker),nb_current_value(Tracker,N,V).
 
@@ -149,9 +158,11 @@ get_named_tracker(?(Ctx),Tracker):- get_nth_tracker(0,TrackerTracker),
 get_value_value(v,V0,V):- \+ compound(V0),!,V0=V.
 get_value_value(oov,oov(V0),V):- !,V0=V.
 get_value_value(v,V0,V):- !,V0=V.
+get_value_value(_,V0,V):- !,V0=V.
 
 set_value_value(v,V0,V):- V0=V.
 set_value_value(oov,V,oov(V0)):- !,V0=V.
+set_value_value(_,V,V0):- !,V0=V.
 
 
 
@@ -216,8 +227,10 @@ is_ootree(Tree):- is_rbtree(Tree),!.
 is_ootree(Tree):- is_dict(Tree),!.
 is_ootree(Tree):- fail_if_undefined(is_oo(Tree)).
 
-oo_new(rbtree,Tree) :- rb_new(Tree).
-oo_new(_,Dict) :- fail_if_undefined(new_oo(_,_,Dict)).
+
+% oo_new(Type,Tree):- var(Type),oo_default(Tree),!,oo_holder_type(Tree,Type).
+oo_new(rbtree,Tree) :- !, rb_new(Tree).
+oo_new(_,Dict) :- fail_if_undefined(new_oo(_,_,Dict)),!.
 
 oo_empty(Tree):- is_rbtree(Tree),!,rb_empty(Tree).
 oo_empty(Tree):- is_dict(Tree),!,Tree=_{}.
@@ -233,6 +246,7 @@ nb_oo_node_value(Node, Value):- nb_rb_node_value(Node, Value).
 
 nb_oo_get_node(Tree, Key, Node):- is_rbtree(Tree),!,nb_rb_get_node(Tree, Key, Node). 
 nb_oo_get_node(Tree, Key, node(Tree, Key)).
+
 
 oo_in(Key, Value, Tree):- is_rbtree(Tree),!,rb_in(Key, Value, Tree).
 oo_in(Key, Value, Tree):- is_dict(Tree),!,get_dict(Key,Tree,Value).

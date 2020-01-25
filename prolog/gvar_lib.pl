@@ -19,6 +19,7 @@
 
 :- meta_predicate(gvar_call(+,?,?,?)).
 :- set_module(class(library)).
+:- set_prolog_flag(generate_debug_info, false).
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
 
@@ -333,7 +334,7 @@ system:term_expansion(M:FDecl, QClause) :-
 is_dvar(Var):- \+ compound(Var),!,fail.
 is_dvar($(_)):- !, use_dot(_).
 is_dvar(the(_)):- !, use_dot(thevars).
-is_dvar(FA):-compound_name_arity(FA,F,_),dvar_type(F,Type,_,_),!,use_dot(Type).
+is_dvar(FA):-compound_name_arity(FA,F,_),dvar_type(F,Type,_,DO),!,(use_dot(Type);DO\==error).
 
 dvar_name(_M,GVAR,TYPE,NAME):- is_dvar(GVAR),GVAR=..[TYPE,NAME|_].
 
@@ -602,6 +603,7 @@ toplevel_variables_expand_query(Goal, Expanded, Bindings, ExpandedBindings):-
 
 toplevel_variables_expand_query(Goal, Expanded, Bindings, ExpandedBindings):-
   toplevel_variables:expand_query(Goal, Expanded, Bindings, ExpandedBindings).
+
 
 
 /*
