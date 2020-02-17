@@ -25,8 +25,8 @@
 
 :- use_module(library(must_sanity)).
 :- reexport(library(debug),[debug/3]).
-:- reexport(library(dicts)).
-:- reexport(library(globals_api)).
+:- system:reexport(library(dicts)).
+:- system:reexport(library(gvar_globals_api)).
 
 :- multifile(dot_eval/3).
 :- dynamic(dot_eval/3).
