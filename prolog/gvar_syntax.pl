@@ -13,6 +13,7 @@
 :- set_module(class(library)).
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
+:- system:use_module(library(logicmoo_common)).
 :- dot_cfg:using_dot_type(gvar_syntax,SM),!,
    SM:use_module(library(gvar_lib)).
 

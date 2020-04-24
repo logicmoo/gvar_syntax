@@ -22,6 +22,7 @@
 :- set_prolog_flag(generate_debug_info, false).
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
+:- system:use_module(library(logicmoo_common)).
 
 :- use_module(library(must_sanity)).
 :- reexport(library(debug),[debug/3]).
