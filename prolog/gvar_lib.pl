@@ -87,6 +87,7 @@ install_dot_intercept:-
 :- multifile(gvs:is_dot_hook/4).
 :- dynamic(gvs:is_dot_hook/4).
 :- module_transparent(gvs:is_dot_hook/4).
+gvs:is_dot_hook(pldoc_wiki,_,_,_):-!,fail.
 
 :- multifile(gvs:dot_overload_hook/4).
 :- dynamic(gvs:dot_overload_hook/4).
@@ -113,10 +114,15 @@ dot_intercept(M,Self,Func,Value):-
 
 :- module_transparent(dot_intercept_lazy/4).
 
-dot_intercept_lazy(M,Self,Func,Value):- \+ is_dict(Self), \+ current_prolog_flag(gvar_lazy, false),!,
+% '__index_wiki_pages'
+gvs:never_dot_intercept(pldoc_wiki).
+dot_intercept_lazy(M,_Self,_Func,_Value):- gvs:never_dot_intercept(M),!, fail.
+dot_intercept_lazy(M,Self,Func,Value):- \+ is_dict(Self), 
+  \+ current_prolog_flag(gvar_lazy, false),!,
   % Value =.. ['.',Self,Func],  
   (var(Self) -> on_bind(Self,dot_intercept(M,Self,Func,Value));
-  (ignore(\+ \+ on_f_rtrace(gvs:is_dot_hook(M,Self,Func,Value))),must(gvs:dot_overload_hook(M,Self,Func,ValueO)),!,Value=ValueO)).
+  (ignore(\+ \+ on_f_rtrace(gvs:is_dot_hook(M,Self,Func,Value))),
+                 must(gvs:dot_overload_hook(M,Self,Func,ValueO)),!,Value=ValueO)).
 dot_intercept_lazy(M,Self,Func,Value):- M:dot_dict(Self, Func, Value).
 
 
