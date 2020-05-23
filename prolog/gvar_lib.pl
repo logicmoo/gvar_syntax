@@ -50,25 +50,22 @@
 install_dot_intercept:- current_prolog_flag(dot_eval,installed),!.
 install_dot_intercept:-
    set_prolog_flag(dot_eval,installed),
-   'system':unlock_predicate('$dicts':'.'/3),
+   'system':unlock_predicate('$dicts':('.'/3)),
    % clause('.'(Dict, Func, Value),BODY),
-   redefine_system_predicate('system':'.'(_Dict, _Func, _Value)),
-   'system':abolish('$dicts':'.'/3),
-   % dynamic('$dicts':'.'/3),
-   % multifile('$dicts':'.'/3),
-   module_transparent('$dicts':'.'/3),
+   redefine_system_predicate('$dicts':'.'(_Dict, _Func, _Value)),
+   'system':abolish('$dicts':('.'/3)),
+   % dynamic('$dicts':('.'/3)),
+   % multifile('$dicts':('.'/3)),
+   module_transparent('$dicts':('.'/3)),
    '$set_source_module'('$dicts'),
    '$dicts':compile_aux_clauses([
-      (('.'(Self,Func,Value) :- dot_eval(Self,Func,Value))) %,
+      (('.'(Self,Func,Value) :- gvlib:dot_eval(Self,Func,Value))) %,
       % ('.'(Dict, Func, Value) ':-' BODY)
       ]),
    '$set_source_module'(gvlib),
-   'system':lock_predicate('$dicts':'.'/3),
-   'system':import('$dicts':'.'/3).
+   'system':lock_predicate('$dicts':('.'/3)),
+   'system':import('$dicts':('.'/3)).
 
-:- install_dot_intercept.
-
-% :- listing('$dicts':('.')/3).
 
 :- if(\+ current_prolog_flag(gvar_callable_syntax,false)).
 %:- multifile(system:(.)/2).
@@ -98,7 +95,7 @@ gvs:is_dot_hook(pldoc_wiki,_,_,_):-!,fail.
 :- 'system':import(gvlib:dot_call/2).
 dot_call(A,B):-dot_eval(A,B,_).
 
-:- 'system':import(gvs:dot_eval/3).
+:- 'system':import(dot_eval/3).
 :- module_transparent(dot_eval/3).
 dot_eval( Self,Func,Value):- is_dict(Self),!,dot_dict(Self, Func, Value).
 dot_eval(MSelf,Func,Value):- strip_module(MSelf,M,_Self),dot_intercept(M,MSelf,Func,Value).
@@ -522,6 +519,10 @@ expand_functions(MBody, ExpandedBody):-
 :- 
    gvar_file_predicates_are_exported,
    gvar_file_predicates_are_transparent.
+
+:- install_dot_intercept.
+
+% :- listing('$dicts':('.')/3).
 
 expand_functions(_,Var,Var):- nc_arg(Var).
 expand_functions(M, :- Fun, :- ExpFun):- !, expand_functions(M, Fun,  ExpFun).
