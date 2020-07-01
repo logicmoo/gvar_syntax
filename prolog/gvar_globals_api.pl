@@ -29,6 +29,11 @@
 
 */
 
+:- system:use_module(library(rbtrees)).
+:- system:use_module(library(assoc)).
+%:- system:use_module(library(rbtrees)).
+
+
 show_name_values:- 
  ignore(forall(nb_current_value(gvar(_),N,V),show_name_value(N,V))),
  format('~N~n',[]).

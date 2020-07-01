@@ -16,9 +16,11 @@
     modify it.
 
 */
+:- set_module(class(library)).
+
+:- system:use_module(library(system),[lock_predicate/1,unlock_predicate/1]).
 
 :- meta_predicate(gvar_call(+,?,?,?)).
-:- set_module(class(library)).
 :- set_prolog_flag(generate_debug_info, false).
 :- multifile(dot_cfg:using_dot_type/2).
 :- dynamic(dot_cfg:using_dot_type/2).
@@ -50,7 +52,7 @@
 install_dot_intercept:- current_prolog_flag(dot_eval,installed),!.
 install_dot_intercept:-
    set_prolog_flag(dot_eval,installed),
-   'system':unlock_predicate('$dicts':('.'/3)),
+   unlock_predicate('$dicts':('.'/3)),
    % clause('.'(Dict, Func, Value),BODY),
    redefine_system_predicate('$dicts':'.'(_Dict, _Func, _Value)),
    'system':abolish('$dicts':('.'/3)),
@@ -63,7 +65,7 @@ install_dot_intercept:-
       % ('.'(Dict, Func, Value) ':-' BODY)
       ]),
    '$set_source_module'(gvlib),
-   'system':lock_predicate('$dicts':('.'/3)),
+   lock_predicate('$dicts':('.'/3)),
    'system':import('$dicts':('.'/3)).
 
 
