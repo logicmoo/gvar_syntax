@@ -31,6 +31,7 @@
 
 :- system:use_module(library(rbtrees)).
 :- system:use_module(library(assoc)).
+:- system:use_module(library(nb_rbtrees)).
 %:- system:use_module(library(rbtrees)).
 
 

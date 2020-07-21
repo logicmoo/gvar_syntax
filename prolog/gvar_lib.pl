@@ -18,7 +18,8 @@
 */
 :- set_module(class(library)).
 
-:- system:use_module(library(system),[lock_predicate/1,unlock_predicate/1]).
+:- autoload(library(system),[lock_predicate/1,unlock_predicate/1]).
+:- autoload(library(when),[when/2]).
 
 :- meta_predicate(gvar_call(+,?,?,?)).
 :- set_prolog_flag(generate_debug_info, false).
