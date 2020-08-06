@@ -127,11 +127,11 @@ dot_intercept_lazy(M,Self,Func,Value):- M:dot_dict(Self, Func, Value).
 
 
 use_dot(Type):- 
-  notrace(( prolog_load_context(module, M),
+  enotrace(( prolog_load_context(module, M),
    use_dot(Type,M))).
 
 use_dot(Type,M):- 
-   notrace((  \+ current_prolog_flag(gvs_syntax, false),
+   enotrace((  \+ current_prolog_flag(gvs_syntax, false),
    (current_prolog_flag(break_level, 0);source_location(_,_)),
    dot_cfg:using_dot_type(Type,M))),!.
 
@@ -637,8 +637,8 @@ contains_dot(Goal):- compound(Goal),
   (compound_name_arity(Goal,'.',2);(arg(_,Goal,Arg),contains_dot(Arg))).
 
 system:goal_expansion(Goal, P, NewGoal, PO):- 
-  notrace((\+ current_prolog_flag(gvs_syntax,false))),
-  notrace((compound(Goal),contains_dot(Goal))),(use_dot(_)),
+  enotrace((\+ current_prolog_flag(gvs_syntax,false))),
+  enotrace((compound(Goal),contains_dot(Goal))),(use_dot(_)),
   show_call(gvar(syntax),((dot_ge(Goal, P, NewGoal)))),  
   P=PO,!.
 
